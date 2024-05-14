@@ -72,7 +72,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let counter = 0;
-        const socket = io({
+        const socket = io("https://realilychattie.vercel.app/", {
             auth: {
                 serverOffset: 0,
             },
