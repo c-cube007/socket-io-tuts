@@ -1,10 +1,10 @@
 const express = require("express");
-const { createServer } = require("http"); // Change from node:http to http
-const { join } = require("path"); // Change from node:path to path
+const http = require("http"); // Change from node:http to http
+const path = require("path"); // Change from node:path to path
 const { Server } = require("socket.io");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
-const { cpus } = require("os"); // Change from node:os to os
+const { cpus } = require("os");
 const cluster = require("cluster");
 const { createAdapter, setupPrimary } = require("@socket.io/cluster-adapter");
 
@@ -12,7 +12,7 @@ const { createAdapter, setupPrimary } = require("@socket.io/cluster-adapter");
 let db;
 async function initializeDB() {
     db = await open({
-        filename: "./data.db",
+        filename: path.join(__dirname, "data.db"), // Adjust path for deployment
         driver: sqlite3.Database,
     });
     await db.run(
@@ -23,10 +23,10 @@ initializeDB();
 
 // Cluster setup
 if (cluster.isPrimary) {
-    const numCPUs = cpus().length; // availableParallelism is not a function, use cpus().length instead
+    const numCPUs = cpus().length;
     for (let i = 0; i < numCPUs; i++) {
         cluster.fork({
-            PORT: 3000 + i,
+            PORT: process.env.PORT || 3000 + i, // Adjust port for deployment
         });
     }
     setupPrimary();
@@ -36,14 +36,14 @@ if (cluster.isPrimary) {
 
 async function main() {
     const app = express();
-    const server = createServer(app);
+    const server = http.createServer(app); // Create server using http
     const io = new Server(server, {
-        connectionStateRecovery: true, // set to true for connection state recovery
-        adapter: createAdapter(), // set up the adapter on each worker thread
+        connectionStateRecovery: true,
+        adapter: createAdapter(),
     });
 
     app.get("/", (req, res) => {
-        res.sendFile(join(__dirname, "index.html"));
+        res.sendFile(path.join(__dirname, "index.html")); // Adjust path for deployment
     });
 
     io.on("connection", async(socket) => {
@@ -80,7 +80,7 @@ async function main() {
         }
     });
 
-    const port = process.env.PORT || 3000; // Use PORT environment variable or default to 3000
+    const port = process.env.PORT || 3000;
 
     server.listen(port, () => {
         console.log(`server running at http://localhost:${port}`);
